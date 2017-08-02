@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	   xmlns="http://www.springframework.org/schema/beans" 
+	   xmlns:context="http://www.springframework.org/schema/context" 
+	   xmlns:tx="http://www.springframework.org/schema/tx" 
+	   xmlns:aop="http://www.springframework.org/schema/aop" 
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	                       http://www.springframework.org/schema/beans/spring-beans-4.2.xsd 
+	                       http://www.springframework.org/schema/context 
+	                       http://www.springframework.org/schema/context/spring-context-4.2.xsd 
+	                       http://www.springframework.org/schema/tx 
+	                       http://www.springframework.org/schema/tx/spring-tx-4.2.xsd 
+	                       http://www.springframework.org/schema/aop 
+	                       http://www.springframework.org/schema/aop/spring-aop-4.2.xsd ">
+	
+	<!-- 读取src/db.properties配置 -->
+	<context:property-placeholder location="classpath:db.properties" />
+	<!-- 配置DataSource -->
+	<bean name="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" >
+		<property name="driverClass" value="${jdbc.driverClass}" ></property>
+		<property name="jdbcUrl" value="${jdbc.jdbcUrl}" ></property>
+		<property name="user" value="${jdbc.user}" ></property>
+		<property name="password" value="${jdbc.password}" ></property>
+	</bean>
+	<!-- 配置sessionFactory
+			方案1:直接读取外部的src/Hibernate.cfg.xml
+			configLocation属性:指定外部hibernate.cfg.xml路径
+	 
+	<bean name="sessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean" >
+		<property name="configLocation" value="classpath:hibernate.cfg.xml" ></property>
+	</bean>
+	-->
+	<!-- 配置sessionFactory 
+			方案2:将hibernate的配置信息转移到spring中
+	-->
+	<bean name="sessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean" >
+		<!-- 将c3p0连接池交给sessionFactory -->
+		<property name="dataSource" ref="dataSource" ></property>
+		
+		<!-- 配置hibernate主配置中的可选|必选配置 -->
+		<property name="hibernateProperties">
+			<props>
+				<!-- 数据库方言配置 -->
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+				<!-- 可选配置 -->
+				<!-- 显示生成的SQL语句到控制台 -->
+				<prop key="hibernate.show_sql">true</prop>
+				<!-- 是否对显示到控制台的sql语句进行格式化 -->
+				<prop key="hibernate.format_sql">true</prop>
+				<!-- 自动生成表结构 -->
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+			</props>
+		</property>
+			<!-- 引入orm元数据 -->
+			<property name="mappingDirectoryLocations" value="classpath:cn/itcast/domain" ></property>
+	</bean>
+	<!-- 配置TransactionManager -->
+	<bean name="transactionManager" class="org.springframework.orm.hibernate5.HibernateTransactionManager" >
+		<property name="sessionFactory" ref="sessionFactory" ></property>
+	</bean>
+	<!-- 开启注解事务开关
+	<tx:annotation-driven transaction-manager="transactionManager" />
+	 -->
+	 
+	 <!-- 配置事务通知 -->
+	 <tx:advice id="txAdvice" transaction-manager="transactionManager" >
+	 	<tx:attributes>
+	 		<tx:method name="save*" read-only="false" />
+	 		<tx:method name="delete*" read-only="false" />
+	 		<tx:method name="update*" read-only="false" />
+	 		<tx:method name="find*" read-only="true" />
+	 		<tx:method name="*" read-only="false" />
+	 	</tx:attributes>
+	 </tx:advice>
+	 <!-- aop织入事务通知到Service -->
+	 <aop:config>
+	 	<aop:pointcut expression="execution(* cn.itcast.service.impl.*ServiceImpl.*(..))" id="txPC"/>
+	 	<aop:advisor advice-ref="txAdvice" pointcut-ref="txPC" />
+	 </aop:config>
+	<!-- 配置Dao -->
+	<bean name="userDao" class="cn.itcast.dao.UserDaoImpl" >
+		<property name="sessionFactory" ref="sessionFactory" ></property>	
+	</bean>
+	
+	<!-- 配置Service -->
+	<bean name="userService" class="cn.itcast.service.impl.UserServiceImpl" >
+		<property name="ud" ref="userDao" ></property>
+	</bean>
+	
+	<!-- 配置Action 
+		注意: Scope属性应指定为prototype, 来确保每次struts2从spring中获得的Action是全新的action对象
+	-->
+	<bean name="userAction" class="cn.itcast.web.action.UserAction" scope="prototype" >
+		<property name="userService" ref="userService" ></property>
+	</bean>
+</beans>

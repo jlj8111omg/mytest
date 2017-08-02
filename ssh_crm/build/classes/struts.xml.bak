@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE struts PUBLIC
+	"-//Apache Software Foundation//DTD Struts Configuration 2.3//EN"
+	"http://struts.apache.org/dtds/struts-2.3.dtd">
+<struts>
+	
+	<!-- 是否开启开发模式,开发时建议开启. -->
+	<constant name="struts.devMode" value="true"></constant>
+	<!--   
+		   启用spring容器作为struts2的对象工厂
+		   struts.objectFactory = spring
+		   指定由spring容器来自动组装依赖关系 - 组装依据是变量名称.开启上面的常量,该常量才有效.
+		   struts.objectFactory.spring.autoWire = name 
+	-->
+	<constant name="struts.objectFactory" value="spring"></constant>
+	<constant name="struts.objectFactory.spring.autoWire" value="name"></constant>
+
+	<package name="crm" namespace="/" extends="struts-default" >
+		<action name="UserAction_*" class="cn.itcast.web.action.UserAction" method="{1}" >
+			<result  type="dispatcher" >/hello.jsp</result>
+		</action>
+	</package>
+	
+</struts>
